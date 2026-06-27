@@ -1,0 +1,31 @@
+/*
+  Font DM Sans untuk mode offline.
+  Jika Anda menyertakan file .woff2 di folder ini (lihat README bagian
+  "Font opsional"), @font-face di bawah akan otomatis dipakai. Jika tidak,
+  body tetap memakai fallback font sistem (Roboto/sans-serif) yang sudah
+  tersedia di semua Android, jadi tampilan tidak akan blank/rusak.
+*/
+
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('DM Sans'), url('DMSans-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: local('DM Sans Medium'), url('DMSans-Medium.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('DM Sans Bold'), url('DMSans-Bold.woff2') format('woff2');
+}

@@ -1,0 +1,11 @@
+# Folder kerja Buildozer (Android SDK/NDK, hasil kompilasi sementara)
+.buildozer/
+bin/
+
+# Cache Python
+__pycache__/
+*.pyc
+
+# File OS
+.DS_Store
+Thumbs.db

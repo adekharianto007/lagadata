@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADEK HARIANTO</title>
+  <script src="lib/tailwind.min.js"></script>
+  <script src="lib/xlsx.full.min.js"></script>
+  <script src="lib/html5-qrcode.min.js"></script>
+  <link href="fonts/dm-sans.css" rel="stylesheet">
+  <script src="lib/lucide.min.js"></script>
+  <style>
+        body { font-family: 'DM Sans', Roboto, -apple-system, sans-serif; background:#f1f5f9; }
+        .tab-active { color: #1e3a5f; border-bottom: 3px solid #e6a817; font-weight: 600; }
+        .tab-inactive { color: #64748b; }
+        .drop-zone { border: 2px dashed #d1d5db; border-radius: 16px; transition: border-color 0.2s; }
+        .drop-zone:hover { border-color: #3b82f6; }
+        #reader video { border-radius: 12px; }
+        .canva-header { background:#1e3a5f; }
+        .canva-text { color:#1e293b; }
+        .canva-button { background:#e6a817; color:#1e3a5f; }
+        .canva-input { color:#1e293b; }
+        header .canva-text { color:#fff; }
+  </style>
+</head>
+ <body class="min-h-screen w-full">
+  <header class="canva-header px-5 pt-5 pb-3 rounded-b-2xl">
+   <div class="flex items-center justify-between">
+    <div class="flex items-center gap-3">
+     <div class="w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center"><i data-lucide="scan-line" class="w-5 h-5 text-white"></i>
+     </div>
+     <div>
+      <h1 class="canva-text font-bold text-lg leading-tight">ADEK HARIANTO</h1>
+      <p class="canva-text text-sm opacity-80">Scan &amp; Cocokkan Data Excel</p>
+     </div>
+    </div><button class="canva-button px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1" onclick="downloadXlsx()"> <i data-lucide="download" class="w-3 h-3"></i> <span>Export .xlsx</span> </button>
+   </div>
+  </header>
+  <nav class="flex gap-6 px-5 pt-3 pb-0 bg-white border-b border-gray-200"><button id="tab-upload" class="tab-active pb-2 text-sm" onclick="switchTab('upload')">Upload</button> <button id="tab-scan" class="tab-inactive pb-2 text-sm relative" onclick="switchTab('scan')">Scan <span id="badge-scan" class="hidden ml-1 inline-flex items-center justify-center w-5 h-5 text-xs bg-blue-600 text-white rounded-full">0</span></button> <button id="tab-hasil" class="tab-inactive pb-2 text-sm relative" onclick="switchTab('hasil')">Hasil <span id="badge-hasil" class="hidden ml-1 inline-flex items-center justify-center w-5 h-5 text-xs bg-blue-600 text-white rounded-full">0</span></button>
+  </nav>
+  <main class="max-w-lg mx-auto p-4 space-y-4">
+   <!-- UPLOAD TAB -->
+   <section id="panel-upload">
+    <h2 class="canva-text font-bold text-xl mb-1">Upload Data</h2>
+    <p class="canva-text text-sm mb-4">Upload file Excel/CSV untuk mulai mencocokkan data hasil scan.</p>
+    <div class="drop-zone p-8 flex flex-col items-center justify-center text-center cursor-pointer" onclick="document.getElementById('file-input').click()">
+     <div class="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-3"><i data-lucide="file-spreadsheet" class="w-7 h-7 text-blue-500"></i>
+     </div>
+     <p class="canva-text font-semibold text-sm">Ketuk untuk pilih file</p>
+     <p class="canva-text text-xs mt-1">atau pilih dari penyimpanan HP</p><span class="mt-3 inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full"> <i data-lucide="download" class="w-3 h-3"></i> .xlsx · .xls · .csv </span>
+    </div><input id="file-input" type="file" accept=".xlsx,.xls,.csv" class="hidden">
+    <p id="file-status" class="mt-3 text-sm text-green-700 font-medium hidden"></p><button class="canva-button w-full mt-5 py-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2" onclick="switchTab('scan')"> <i data-lucide="scan-line" class="w-4 h-4"></i> <span>Mulai Scan</span> </button>
+    <div id="preview-section" class="mt-6 hidden">
+     <div class="bg-white rounded-xl border border-gray-200 p-4">
+      <h3 class="canva-text font-bold text-lg mb-3">Pratinjau Data</h3>
+      <div class="mb-4"><label class="canva-text block text-sm font-semibold mb-2" for="target-column">Kolom Kunci Pencocokan</label> <select id="target-column" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"></select>
+      </div>
+      <div class="overflow-x-auto">
+       <table class="w-full text-sm">
+        <thead id="preview-head" class="bg-gray-50"></thead>
+        <tbody id="preview-body"></tbody>
+       </table>
+      </div>
+     </div>
+    </div>
+   </section>
+   <!-- SCAN TAB -->
+   <section id="panel-scan" class="hidden space-y-4">
+    <div id="scan-warning" class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+     <div class="flex items-start gap-2"><i data-lucide="upload" class="w-5 h-5 text-yellow-600 mt-0.5"></i>
+      <div>
+       <p class="canva-text font-semibold text-sm">Belum ada data</p>
+       <p class="canva-text text-xs mt-0.5">Upload file Excel/CSV terlebih dahulu sebelum memulai scan.</p><button class="text-blue-600 text-xs font-semibold mt-1" onclick="switchTab('upload')">Upload Sekarang →</button>
+      </div>
+     </div>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-4">
+     <div class="flex items-center gap-2 mb-3"><i data-lucide="scan-line" class="w-4 h-4 text-gray-700"></i> <span class="canva-text font-semibold text-sm">Kamera Scanner</span>
+     </div>
+     <div id="reader-container" class="drop-zone flex flex-col items-center justify-center py-10 cursor-pointer" onclick="toggleScanner()">
+      <div id="camera-placeholder" class="flex flex-col items-center">
+       <div class="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mb-2"><i data-lucide="scan" class="w-7 h-7 text-gray-400"></i>
+       </div>
+       <p class="canva-text font-semibold text-sm">Ketuk untuk mulai scan</p>
+       <p class="canva-text text-xs mt-0.5">Arahkan kamera ke QR/barcode</p>
+      </div>
+      <div id="reader" class="w-full hidden"></div>
+     </div><button id="stop-scan-btn" class="hidden w-full mt-3 py-2 bg-red-500 text-white rounded-lg text-sm font-medium" onclick="toggleScanner()">Stop Scanner</button>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-4">
+     <div class="flex items-center gap-2 mb-3"><i data-lucide="keyboard" class="w-4 h-4 text-gray-700"></i> <span class="canva-text font-semibold text-sm">Input Manual</span>
+     </div>
+     <div class="flex gap-2"><input id="manual-code" type="text" placeholder="Masukkan kode..." class="canva-input flex-1 px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"> <button class="canva-button px-5 py-2.5 rounded-lg text-sm font-semibold" onclick="addManual()">Tambah</button>
+     </div>
+    </div>
+   </section>
+   <!-- HASIL TAB -->
+   <section id="panel-hasil" class="hidden space-y-4">
+    <div>
+     <h2 class="canva-text font-bold text-xl">Hasil Scan</h2>
+     <p id="results-count-text" class="text-sm text-gray-500 mt-0.5">0 data tersusun sesuai urutan scan</p>
+    </div>
+    <div class="flex gap-3"><button class="canva-button px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2" onclick="clearHistory()"> <i data-lucide="trash-2" class="w-4 h-4"></i> <span>Hapus Riwayat</span> </button> <button class="canva-button px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2" onclick="downloadXlsx()"> <i data-lucide="download" class="w-4 h-4"></i> <span>Export .xlsx</span> </button>
+    </div>
+    <div class="grid grid-cols-3 gap-3">
+     <div class="bg-white border border-gray-200 rounded-xl p-3 text-center">
+      <p id="stat-total" class="text-2xl font-bold text-blue-600">0</p>
+      <p class="text-xs text-gray-500 mt-1">Total Data</p>
+     </div>
+     <div class="bg-white border border-gray-200 rounded-xl p-3 text-center">
+      <p id="stat-scanned" class="text-2xl font-bold text-green-600">0</p>
+      <p class="text-xs text-gray-500 mt-1">Sudah Scan</p>
+     </div>
+     <div class="bg-white border border-gray-200 rounded-xl p-3 text-center">
+      <p id="stat-unscanned" class="text-2xl font-bold text-red-600">0</p>
+      <p class="text-xs text-gray-500 mt-1">Belum Scan</p>
+     </div>
+    </div>
+    <div id="empty-state" class="flex flex-col items-center py-10">
+     <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-3"><i data-lucide="scan" class="w-8 h-8 text-gray-300"></i>
+     </div>
+     <p class="canva-text font-semibold text-sm">Belum ada data</p>
+     <p class="canva-text text-xs mt-1">Upload file Excel untuk memulai</p><button class="canva-button mt-4 px-5 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2" onclick="switchTab('upload')"> <i data-lucide="upload" class="w-4 h-4"></i> <span>Upload Excel</span> </button>
+    </div>
+    <div id="results-table-wrap" class="hidden">
+     <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+      <table class="w-full text-sm">
+       <thead id="table-head" class="bg-gray-50"></thead>
+       <tbody id="table-body"></tbody>
+      </table>
+     </div>
+    </div>
+   </section>
+   <div id="status-msg" class="text-center text-sm font-medium hidden p-3 rounded-lg"></div>
+  </main>
+  <script>
+        let excelData = [];
+        let headers = [];
+        let results = [];
+        let scanner = null;
+        let scanning = false;
+        let targetColumnIndex = 0;
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        if (window.lucide) { lucide.createIcons(); }
+
+        function switchTab(tab) {
+            ['upload','scan','hasil'].forEach(t => {
+                document.getElementById('panel-'+t).classList.toggle('hidden', t !== tab);
+                document.getElementById('tab-'+t).className = t === tab ? 'tab-active pb-2 text-sm relative' : 'tab-inactive pb-2 text-sm relative';
+            });
+            if (tab === 'scan') updateScanWarning();
+            if (tab === 'hasil') updateHasil();
+            if (tab !== 'scan' && scanning) stopScanner();
+        }
+
+        function updateBadges() {
+            const bs = document.getElementById('badge-scan');
+            const bh = document.getElementById('badge-hasil');
+            if (results.length > 0) { bs.textContent = results.length; bs.classList.remove('hidden'); } else { bs.classList.add('hidden'); }
+            if (excelData.length > 0) { bh.textContent = excelData.length; bh.classList.remove('hidden'); } else { bh.classList.add('hidden'); }
+        }
+
+        function updateScanWarning() {
+            document.getElementById('scan-warning').classList.toggle('hidden', excelData.length > 0);
+        }
+
+        function updateHasil() {
+            const total = excelData.length;
+            const scanned = results.length;
+            const unscanned = total - scanned;
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-scanned').textContent = scanned;
+            document.getElementById('stat-unscanned').textContent = unscanned;
+            document.getElementById('results-count-text').textContent = scanned + ' data tersusun sesuai urutan scan';
+            document.getElementById('empty-state').classList.toggle('hidden', total > 0);
+            document.getElementById('results-table-wrap').classList.toggle('hidden', total === 0);
+            updateBadges();
+            if (total > 0) renderTable();
+        }
+
+        function playBeep() {
+            const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+            o.connect(g); g.connect(audioCtx.destination);
+            o.frequency.value = 1000; g.gain.value = 0.3;
+            o.start(); o.stop(audioCtx.currentTime + 0.15);
+        }
+        function playSalah() {
+            const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+            o.connect(g); g.connect(audioCtx.destination);
+            o.type = 'square'; o.frequency.value = 300; g.gain.value = 0.3;
+            o.start(); o.stop(audioCtx.currentTime + 0.4);
+        }
+        function playSudah() {
+            for (let i = 0; i < 2; i++) {
+                const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+                o.connect(g); g.connect(audioCtx.destination);
+                o.type = 'sawtooth'; o.frequency.value = 400; g.gain.value = 0.2;
+                o.start(audioCtx.currentTime + i * 0.2); o.stop(audioCtx.currentTime + i * 0.2 + 0.12);
+            }
+        }
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                const u = new SpeechSynthesisUtterance(text); u.lang = 'id-ID'; u.rate = 1.2;
+                speechSynthesis.speak(u);
+            }
+        }
+
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                const wb = XLSX.read(ev.target.result, {type:'array'});
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(ws, {header:1});
+                if (json.length < 2) { showStatus('File kosong atau tidak valid','red'); return; }
+                headers = json[0]; excelData = json.slice(1);
+                targetColumnIndex = 0;
+                const fs = document.getElementById('file-status');
+                fs.textContent = '✓ ' + excelData.length + ' baris data dimuat';
+                fs.classList.remove('hidden');
+                results = [];
+                renderPreview();
+                updateBadges();
+                showStatus('Data Excel berhasil dimuat!','green');
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function toggleScanner() {
+            if (scanning) { stopScanner(); return; }
+            if (!excelData.length) { showStatus('Upload file Excel terlebih dahulu','red'); return; }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            document.getElementById('camera-placeholder').classList.add('hidden');
+            document.getElementById('reader').classList.remove('hidden');
+            document.getElementById('stop-scan-btn').classList.remove('hidden');
+            scanner = new Html5Qrcode("reader");
+            scanner.start({facingMode:"environment"},{fps:10,qrbox:{width:220,height:220}},onScanSuccess).catch(err=>{
+                showStatus('Gagal akses kamera: '+err,'red');
+                stopScanner();
+            });
+            scanning = true;
+        }
+        function stopScanner() {
+            if (scanner) scanner.stop().then(()=>{ scanner.clear(); }).catch(()=>{});
+            document.getElementById('reader').classList.add('hidden');
+            document.getElementById('camera-placeholder').classList.remove('hidden');
+            document.getElementById('stop-scan-btn').classList.add('hidden');
+            scanning = false;
+        }
+        function onScanSuccess(decoded) { matchAndAdd(decoded.trim()); }
+
+        function addManual() {
+            const input = document.getElementById('manual-code');
+            const val = input.value.trim(); if (!val) return;
+            if (!excelData.length) { showStatus('Upload file Excel terlebih dahulu','red'); return; }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            matchAndAdd(val); input.value = '';
+        }
+
+        function matchAndAdd(code) {
+            const row = excelData.find(r => String(r[targetColumnIndex]).trim() === code);
+            if (!row) { playSalah(); speak('SALAH'); showStatus('"'+code+'" tidak ditemukan — SALAH','red'); return; }
+            if (results.some(r => String(r[targetColumnIndex]).trim() === code)) { playSudah(); speak('SUDAH PERNAH SCAN'); showStatus('"'+code+'" sudah pernah di-scan','orange'); return; }
+            playBeep(); results.push(row); updateBadges();
+            showStatus('✓ "'+code+'" ditambahkan (#'+results.length+')','green');
+        }
+
+        function renderTable() {
+            if (!excelData.length) return;
+            const thead = document.getElementById('table-head');
+            thead.innerHTML = '<tr>' + ['#', ...headers].map(h=>'<th class="px-3 py-2 text-left font-semibold text-xs text-gray-600 whitespace-nowrap">'+h+'</th>').join('') + '</tr>';
+
+            const scannedKeys = new Set(results.map(r => String(r[targetColumnIndex]).trim()));
+            const unscanned = excelData.filter(r => !scannedKeys.has(String(r[targetColumnIndex]).trim()));
+
+            const tbody = document.getElementById('table-body');
+            let html = '';
+            results.forEach((r, i) => {
+                html += '<tr class="border-t">' + '<td class="px-3 py-2 text-xs">'+(i+1)+'</td>' + r.map(c=>'<td class="px-3 py-2 text-xs whitespace-nowrap">'+(c??'')+'</td>').join('') + '</tr>';
+            });
+            unscanned.forEach((r, i) => {
+                const num = results.length + i + 1;
+                html += '<tr class="border-t">' + '<td class="px-3 py-2 text-xs text-red-500">'+num+'</td>' + r.map(c=>'<td class="px-3 py-2 text-xs whitespace-nowrap text-red-500">'+(c??'')+'</td>').join('') + '</tr>';
+            });
+            tbody.innerHTML = html;
+        }
+
+        function renderPreview() {
+            if (!headers.length) { document.getElementById('preview-section').classList.add('hidden'); return; }
+            document.getElementById('preview-section').classList.remove('hidden');
+            const selectEl = document.getElementById('target-column');
+            selectEl.innerHTML = headers.map((h, i) => '<option value="'+i+'">'+h+'</option>').join('');
+            selectEl.value = targetColumnIndex;
+            selectEl.onchange = (e) => { targetColumnIndex = parseInt(e.target.value); };
+            const thead = document.getElementById('preview-head');
+            thead.innerHTML = '<tr>' + headers.map(h=>'<th class="px-3 py-2 text-left font-semibold text-xs text-gray-600">'+h+'</th>').join('') + '</tr>';
+            const tbody = document.getElementById('preview-body');
+            tbody.innerHTML = excelData.slice(0, 5).map(r=>'<tr class="border-t">' + r.map(c=>'<td class="px-3 py-2 text-xs">'+(c??'')+'</td>').join('') + '</tr>').join('');
+        }
+
+        function downloadXlsx() {
+            if (!excelData.length) { showStatus('Tidak ada data untuk di-export','red'); return; }
+            const scannedKeys = new Set(results.map(r => String(r[targetColumnIndex]).trim()));
+            const unscanned = excelData.filter(r => !scannedKeys.has(String(r[targetColumnIndex]).trim()));
+            const data = [headers, ...results, ...unscanned];
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Hasil Scan');
+            try {
+                // Coba kirim ke Android native agar bisa disimpan via Storage Access Framework
+                const wbout = XLSX.write(wb, {bookType:'xlsx', type:'base64'});
+                if (window.AndroidBridge && window.AndroidBridge.saveXlsxBase64) {
+                    window.AndroidBridge.saveXlsxBase64(wbout, 'hasil_scan.xlsx');
+                    showStatus('File diekspor ke folder Download','green');
+                    return;
+                }
+            } catch (e) { /* fallback di bawah */ }
+            XLSX.writeFile(wb, 'hasil_scan.xlsx');
+        }
+
+        function clearHistory() { results = []; updateHasil(); showStatus('Riwayat dihapus','green'); }
+
+        function showStatus(msg, color) {
+            const el = document.getElementById('status-msg'); el.textContent = msg;
+            el.className = 'text-center text-sm font-medium p-3 rounded-lg ' + (color==='green'?'bg-green-100 text-green-800':color==='red'?'bg-red-100 text-red-800':'bg-yellow-100 text-yellow-800');
+            el.classList.remove('hidden');
+            setTimeout(()=>el.classList.add('hidden'), 3000);
+        }
+
+        document.getElementById('manual-code').addEventListener('keydown', e=>{ if(e.key==='Enter'){e.preventDefault();addManual();} });
+    </script>
+ </body>
+</html>

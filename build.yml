@@ -1,0 +1,85 @@
+name: Build Android APK
+
+# Workflow ini menjalankan Buildozer di server Linux milik GitHub
+# (gratis untuk repo publik), supaya Anda tidak perlu install Linux/WSL
+# atau Android SDK/NDK apa pun di laptop sendiri.
+#
+# Cara pakai:
+# 1. Push semua isi folder ini (termasuk file .github/workflows/build.yml
+#    ini) ke repo GitHub Anda.
+# 2. Buka tab "Actions" di repo GitHub Anda — build akan berjalan otomatis.
+# 3. Setelah selesai (sekitar 20-40 menit untuk build pertama kali),
+#    download APK dari bagian "Artifacts" di halaman hasil run tersebut.
+#
+# Bisa juga dipicu manual lewat tab Actions -> pilih workflow ini -> "Run workflow".
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout kode
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Setup Java 17 (dibutuhkan Android Gradle)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install dependency sistem untuk Buildozer
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git zip unzip openjdk-17-jdk python3-pip autoconf libtool \
+            pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev \
+            libtinfo5 cmake libffi-dev libssl-dev build-essential \
+            ccache automake libltdl-dev
+
+      - name: Install Buildozer & Cython
+        run: |
+          pip install --upgrade pip
+          pip install buildozer==1.5.0 cython==0.29.36
+
+      - name: Cache Buildozer (Android SDK/NDK) antar-run
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.buildozer
+            .buildozer
+          key: buildozer-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            buildozer-
+
+      - name: Cek library offline (lib/) sudah lengkap
+        run: |
+          MISSING=0
+          for f in tailwind.min.js xlsx.full.min.js html5-qrcode.min.js lucide.min.js; do
+            if [ ! -s "assets/lib/$f" ]; then
+              echo "::warning::File assets/lib/$f belum ada atau kosong. Lihat README bagian 'Mengunduh library offline'."
+              MISSING=1
+            fi
+          done
+          if [ "$MISSING" = "1" ]; then
+            echo "::warning::Build tetap dilanjutkan, tapi aplikasi mungkin blank/error di WebView karena library JS belum lengkap."
+          fi
+
+      - name: Build APK debug
+        run: |
+          yes | buildozer android debug
+
+      - name: Upload APK sebagai artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: adekharianto-debug-apk
+          path: bin/*.apk
+          if-no-files-found: error
